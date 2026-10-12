@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Смена профессии — подбор пути</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F4F6F1;
+    --surface: #FFFFFF;
+    --text: #18221C;
+    --muted: #5B695F;
+    --forest: #2B5742;
+    --forest-soft: #E0ECE3;
+    --amber: #B9781F;
+    --amber-soft: #F5E6CC;
+    --border: #DCE2D8;
+    --track: #E6EAE2;
+    --on-forest: #F4F6F1;
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111713;
+      --surface: #19211B;
+      --text: #E9ECE6;
+      --muted: #93A598;
+      --forest: #79B494;
+      --forest-soft: #1F2D24;
+      --amber: #E3A64F;
+      --amber-soft: #382C19;
+      --border: #28322B;
+      --track: #222B24;
+      --on-forest: #0F1611;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.5; }
+  .page { max-width: 1120px; margin: 0 auto; padding: 44px 24px 72px; }
+
+  header { margin-bottom: 36px; }
+  .kicker { font-size: 14px; font-weight: 600; color: var(--forest); margin-bottom: 10px; }
+  h1 {
+    font-family: 'Fraunces', Georgia, serif; font-weight: 500;
+    font-size: clamp(30px, 5vw, 46px); line-height: 1.1; letter-spacing: -0.015em;
+    margin: 0 0 12px; max-width: 18ch;
+  }
+  .lede { color: var(--muted); font-size: 17px; margin: 0; max-width: 52ch; }
+
+  .layout { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 32px; align-items: start; }
+
+  /* ---------- панель навыков ---------- */
+  .skills-panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 22px; position: sticky; top: 20px;
+    max-height: calc(100vh - 40px); display: flex; flex-direction: column;
+  }
+  h2 { font-family: 'Fraunces', Georgia, serif; font-weight: 500; font-size: 21px; margin: 0 0 4px; }
+  .hint { font-size: 14px; color: var(--muted); margin: 0 0 14px; }
+  .search {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 9px;
+    background: var(--bg); color: var(--text); font: inherit; font-size: 14px; margin-bottom: 12px;
+  }
+  .search:focus { outline: 2px solid var(--forest); outline-offset: 1px; }
+  .groups { overflow-y: auto; flex: 1; padding-right: 4px; margin-right: -4px; }
+  .group { margin-bottom: 16px; }
+  .group h3 { font-size: 12.5px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    border: 1px solid var(--border); background: transparent; color: var(--text);
+    padding: 6px 12px; border-radius: 18px; font: inherit; font-size: 13.5px; cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .chip:hover { border-color: var(--forest); }
+  .chip.active { background: var(--forest-soft); border-color: var(--forest); color: var(--forest); font-weight: 600; }
+  .chip[hidden], .group[hidden] { display: none; }
+
+  .actions { padding-top: 14px; margin-top: 8px; border-top: 1px solid var(--border); }
+  .actions-row { display: flex; justify-content: space-between; align-items: center; font-size: 13.5px; color: var(--muted); margin-bottom: 10px; }
+  .link-btn { background: none; border: none; color: var(--muted); font: inherit; font-size: 13.5px; text-decoration: underline; cursor: pointer; padding: 0; }
+  .primary {
+    width: 100%; background: var(--forest); color: var(--on-forest); border: none;
+    padding: 13px; border-radius: 10px; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  .primary:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* ---------- результаты ---------- */
+  .results-title { font-family: 'Fraunces', Georgia, serif; font-weight: 500; font-size: 24px; margin: 0 0 4px; }
+  .results-sub { color: var(--muted); font-size: 14.5px; margin: 0 0 20px; }
+  .placeholder {
+    border: 1px dashed var(--border); border-radius: 14px; padding: 48px 28px;
+    color: var(--muted); text-align: center; font-size: 15px;
+  }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border);
+    border-radius: 12px; padding: 20px 22px; margin-bottom: 14px;
+    animation: rise .35s ease both;
+  }
+  .card.high { border-left-color: var(--forest); }
+  .card.mid { border-left-color: var(--amber); }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .card-title { font-size: 18px; font-weight: 600; margin: 0; }
+  .card-pct { font-family: 'Fraunces', Georgia, serif; font-size: 24px; color: var(--forest); white-space: nowrap; }
+  .card.mid .card-pct { color: var(--amber); }
+  .card.low .card-pct { color: var(--muted); }
+  .card-desc { color: var(--muted); font-size: 14.5px; margin: 2px 0 12px; }
+  .track { height: 6px; background: var(--track); border-radius: 4px; overflow: hidden; margin-bottom: 14px; }
+  .fill { height: 100%; background: var(--forest); border-radius: 4px; }
+  .card.mid .fill { background: var(--amber); }
+  .card.low .fill { background: var(--muted); }
+
+  .label { font-size: 12.5px; font-weight: 600; color: var(--muted); margin: 14px 0 6px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { background: var(--forest-soft); color: var(--forest); font-size: 13px; padding: 3px 10px; border-radius: 12px; }
+  .gap { display: flex; flex-direction: column; gap: 6px; }
+  .gap-item { display: flex; justify-content: space-between; gap: 14px; padding: 9px 12px; background: var(--bg); border-radius: 8px; font-size: 14px; }
+  .gap-skill { font-weight: 500; }
+  .gap-course { color: var(--muted); text-align: right; }
+  .course-line { margin-bottom: 2px; }
+  .course-hint { font-size: 13px; margin-bottom: 4px; }
+  .card-note { font-size: 13.5px; color: var(--text); background: var(--amber-soft); border-radius: 8px; padding: 8px 12px; margin: 0 0 12px; }
+  .more-btn {
+    display: block; width: 100%; margin: 6px 0 14px; padding: 12px; background: transparent; color: var(--forest);
+    border: 1px solid var(--border); border-radius: 10px; font: inherit; font-size: 14.5px; font-weight: 600; cursor: pointer;
+  }
+  .more-btn:hover { border-color: var(--forest); }
+  .course-link { color: var(--forest); text-decoration: none; font-weight: 500; }
+  .course-link:hover { text-decoration: underline; }
+  .done { font-size: 14px; color: var(--forest); margin: 12px 0 0; }
+
+  .vac-btn {
+    margin-top: 14px; background: transparent; color: var(--forest); border: 1px solid var(--forest);
+    padding: 8px 14px; border-radius: 8px; font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+  }
+  .vac-btn:disabled { opacity: .5; cursor: default; }
+  .vac-box { margin-top: 12px; font-size: 14px; }
+  .vac-note { color: var(--muted); background: var(--amber-soft); padding: 10px 12px; border-radius: 8px; }
+  .vac-summary { color: var(--muted); margin: 0 0 8px; }
+  .vac-item { display: block; padding: 9px 0; border-top: 1px solid var(--border); color: var(--text); text-decoration: none; }
+  .vac-item:hover .vac-title { text-decoration: underline; }
+  .vac-title { font-weight: 500; }
+  .vac-company { color: var(--muted); font-size: 13px; }
+
+  .history { margin-top: 36px; }
+  .history h2 { font-size: 18px; margin-bottom: 10px; }
+  .hist-item { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--border); font-size: 14px; }
+  .hist-meta { color: var(--muted); white-space: nowrap; }
+
+  footer { margin-top: 40px; font-size: 13px; color: var(--muted); max-width: 70ch; }
+
+  @media (max-width: 920px) {
+    .layout { grid-template-columns: 1fr; }
+    .skills-panel { position: static; max-height: none; }
+    .groups { overflow: visible; }
+  }
+  @media (max-width: 520px) {
+    .page { padding: 30px 16px 56px; }
+    .gap-item { flex-direction: column; gap: 2px; }
+    .gap-course { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="kicker">Смена профессии</div>
+    <h1>С чего начинается новая профессия</h1>
+    <p class="lede">Отметьте, что вы уже умеете. Сервис покажет, куда ваши навыки переносятся, чего не хватает и что стоит выучить.</p>
+  </header>
+
+  <div class="layout">
+    <aside class="skills-panel">
+      <h2>Ваши навыки</h2>
+      <p class="hint">Всё, что применяли на практике хотя бы раз</p>
+      <input class="search" id="search" type="search" placeholder="Найти навык…" autocomplete="off">
+      <div class="groups" id="groups"></div>
+      <div class="actions">
+        <div class="actions-row">
+          <span id="count">Выбрано: 0</span>
+          <button class="link-btn" id="clear" type="button">Сбросить</button>
+        </div>
+        <button class="primary" id="go" type="button" disabled>Подобрать профессии</button>
+      </div>
+    </aside>
+
+    <main>
+      <div id="results">
+        <div class="placeholder">Выберите навыки слева и нажмите «Подобрать профессии».</div>
+      </div>
+      <section class="history" id="historyBox" hidden>
+        <h2>Недавние подборы</h2>
+        <div id="history"></div>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    Для навыков из онлайн-сферы даны ссылки на курсы Нетологии и поиск по Skillbox. Для практических профессий (уход, ремонт, красота, сфера услуг) курсы чаще всего проходят в колледжах и учебных центрах, поэтому дана ссылка на поиск, добавьте в запрос свой город. Вакансии и зарплаты подтягиваются из официальных API job-сайтов, если подключены ключи.
+  </footer>
+</div>
+
+<script>
+  const $ = (s) => document.querySelector(s);
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined && text !== null) e.textContent = text;
+    return e;
+  }
+
+  // анонимный идентификатор браузера: по нему показывается только «своя» история
+  let clientId = '';
+  try {
+    clientId = localStorage.getItem('cid') || '';
+    if (!clientId) {
+      clientId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+      localStorage.setItem('cid', clientId);
+    }
+  } catch (e) { clientId = 'anon'; }
+
+  const selected = new Set();
+  const chipEls = [];
+
+  function updateCount() {
+    $('#count').textContent = 'Выбрано: ' + selected.size;
+    $('#go').disabled = selected.size === 0;
+  }
+
+  async function loadCatalog() {
+    const res = await fetch('/api/catalog');
+    const data = await res.json();
+    const box = $('#groups');
+    data.groups.forEach(g => {
+      const group = el('div', 'group');
+      group.appendChild(el('h3', null, g.title));
+      const chips = el('div', 'chips');
+      g.skills.forEach(s => {
+        const b = el('button', 'chip', s.name);
+        b.type = 'button';
+        b.addEventListener('click', () => {
+          if (selected.has(s.id)) { selected.delete(s.id); b.classList.remove('active'); }
+          else { selected.add(s.id); b.classList.add('active'); }
+          updateCount();
+        });
+        chips.appendChild(b);
+        chipEls.push({ id: s.id, el: b, text: s.name.toLowerCase(), group });
+      });
+      group.appendChild(chips);
+      box.appendChild(group);
+    });
+  }
+
+  $('#search').addEventListener('input', (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    const visibleGroups = new Set();
+    chipEls.forEach(c => {
+      const show = !q || c.text.includes(q);
+      c.el.hidden = !show;
+      if (show) visibleGroups.add(c.group);
+    });
+    document.querySelectorAll('.group').forEach(g => { g.hidden = !visibleGroups.has(g); });
+  });
+
+  $('#clear').addEventListener('click', () => {
+    selected.clear();
+    chipEls.forEach(c => c.el.classList.remove('active'));
+    updateCount();
+  });
+
+  function tier(pct) { return pct >= 70 ? 'high' : pct >= 40 ? 'mid' : 'low'; }
+
+  function renderCard(r, i) {
+    const card = el('article', 'card ' + tier(r.pct));
+    card.style.animationDelay = Math.min(i, 8) * 40 + 'ms';
+
+    const head = el('div', 'card-head');
+    head.appendChild(el('h3', 'card-title', r.name));
+    head.appendChild(el('span', 'card-pct', r.pct + '%'));
+    card.appendChild(head);
+    card.appendChild(el('p', 'card-desc', r.desc));
+    if (r.note) card.appendChild(el('p', 'card-note', r.note));
+
+    const track = el('div', 'track');
+    const fill = el('div', 'fill');
+    fill.style.width = r.pct + '%';
+    track.appendChild(fill);
+    card.appendChild(track);
+
+    if (r.have.length) {
+      card.appendChild(el('div', 'label', 'Уже есть'));
+      const tags = el('div', 'tags');
+      r.have.forEach(h => tags.appendChild(el('span', 'tag', h)));
+      card.appendChild(tags);
+    }
+
+    if (r.missing.length) {
+      card.appendChild(el('div', 'label', 'Нужно освоить'));
+      const gap = el('div', 'gap');
+      r.missing.forEach(m => {
+        const row = el('div', 'gap-item');
+        row.appendChild(el('span', 'gap-skill', m.skill));
+        const cs = el('span', 'gap-course');
+        if (m.hint) cs.appendChild(el('div', 'course-hint', m.hint));
+        if (m.courses && m.courses.length) {
+          m.courses.forEach(c => {
+            if (!/^https?:\/\//.test(c.url)) return;
+            const line = el('div', 'course-line');
+            const a = el('a', 'course-link', c.direct ? c.title + ' · ' + c.platform : c.title);
+            a.href = c.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+            line.appendChild(a);
+            cs.appendChild(line);
+          });
+        } else if (!m.hint) {
+          cs.textContent = 'осваивается на практике';
+        }
+        row.appendChild(cs);
+        gap.appendChild(row);
+      });
+      card.appendChild(gap);
+    } else {
+      card.appendChild(el('p', 'done', 'Все ключевые навыки профессии у вас уже есть.'));
+    }
+
+    const btn = el('button', 'vac-btn', 'Вакансии и зарплата на рынке');
+    btn.type = 'button';
+    const vbox = el('div', 'vac-box');
+    btn.addEventListener('click', () => loadVacancies(r.id, btn, vbox));
+    card.appendChild(btn);
+    card.appendChild(vbox);
+    return card;
+  }
+
+  async function loadVacancies(id, btn, box) {
+    btn.disabled = true;
+    btn.textContent = 'Загружаю…';
+    box.innerHTML = '';
+    try {
+      const res = await fetch('/api/vacancies', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profession_id: id }),
+      });
+      const v = await res.json();
+      if (!v.available) {
+        box.appendChild(el('div', 'vac-note',
+          'Данные о вакансиях пока недоступны (' + v.reason + '). Подбор профессий и курсов от этого не зависит.'));
+      } else {
+        let s = 'Источник: ' + v.source + ' · найдено вакансий: ' + v.total;
+        if (v.median_salary) s += ' · медианная зарплата ≈ ' + v.median_salary.toLocaleString('ru-RU') + ' ₽';
+        box.appendChild(el('p', 'vac-summary', s));
+        v.items.forEach(it => {
+          const ok = typeof it.url === 'string' && /^https?:\/\//.test(it.url);
+          const a = el(ok ? 'a' : 'div', 'vac-item');
+          if (ok) { a.href = it.url; a.target = '_blank'; a.rel = 'noopener noreferrer'; }
+          a.appendChild(el('div', 'vac-title', it.title));
+          a.appendChild(el('div', 'vac-company', it.company));
+          box.appendChild(a);
+        });
+      }
+      btn.remove();
+    } catch (e) {
+      box.appendChild(el('div', 'vac-note', 'Не удалось связаться с сервером.'));
+      btn.disabled = false;
+      btn.textContent = 'Попробовать снова';
+    }
+  }
+
+  async function runMatch() {
+    const out = $('#results');
+    out.innerHTML = '';
+    out.appendChild(el('div', 'placeholder', 'Считаю…'));
+    try {
+      const res = await fetch('/api/match', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ skills: [...selected], client_id: clientId }),
+      });
+      const data = await res.json();
+      out.innerHTML = '';
+      if (!data.results.length) {
+        out.appendChild(el('div', 'placeholder', 'Пока нет пересечений с базой профессий — отметьте больше навыков.'));
+        return;
+      }
+      out.appendChild(el('h2', 'results-title', 'Куда можно перейти'));
+      out.appendChild(el('p', 'results-sub', 'Профессии, отсортированные по доле ваших навыков в их требованиях'));
+      const FIRST = 8;
+      data.results.slice(0, FIRST).forEach((r, i) => out.appendChild(renderCard(r, i)));
+      const rest = data.results.slice(FIRST);
+      if (rest.length) {
+        const more = el('button', 'more-btn', 'Показать ещё профессии: ' + rest.length);
+        more.type = 'button';
+        more.addEventListener('click', () => {
+          rest.forEach((r, i) => out.insertBefore(renderCard(r, i), more));
+          more.remove();
+        });
+        out.appendChild(more);
+      }
+      loadHistory();
+      if (window.innerWidth <= 920) out.scrollIntoView({ behavior: 'smooth' });
+    } catch (e) {
+      out.innerHTML = '';
+      out.appendChild(el('div', 'placeholder', 'Ошибка соединения с сервером. Запущен ли main.py?'));
+    }
+  }
+  $('#go').addEventListener('click', runMatch);
+
+  async function loadHistory() {
+    try {
+      const res = await fetch('/api/history?client_id=' + encodeURIComponent(clientId));
+      const data = await res.json();
+      const box = $('#history');
+      box.innerHTML = '';
+      data.items.forEach(h => {
+        const row = el('div', 'hist-item');
+        row.appendChild(el('span', null, h.profession + ' — ' + h.pct + '%'));
+        row.appendChild(el('span', 'hist-meta', h.skills_count + ' навыков · ' + (h.time || '').slice(0, 16)));
+        box.appendChild(row);
+      });
+      $('#historyBox').hidden = data.items.length === 0;
+    } catch (e) { /* история необязательна */ }
+  }
+
+  loadCatalog();
+  loadHistory();
+</script>
+</body>
+</html>
